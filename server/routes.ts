@@ -487,41 +487,6 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/videos/:videoId/position/:kidId", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const videoId = req.params.videoId as string;
-      const kidId = req.params.kidId as string;
-      const { position, duration } = req.body;
-      if (typeof position !== 'number' || position < 0) {
-        return res.status(400).json({ error: "Invalid position" });
-      }
-      const saved = await storage.saveVideoPosition(videoId, kidId, position, userId, duration);
-      res.json({ success: saved });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to save position" });
-    }
-  });
-
-  app.post("/api/public/kid/:kidId/videos/:videoId/position", async (req: Request, res: Response) => {
-    try {
-      const kidId = req.params.kidId as string;
-      const videoId = req.params.videoId as string;
-      const { position, duration } = req.body;
-      if (typeof position !== 'number' || position < 0) {
-        return res.status(400).json({ error: "Invalid position" });
-      }
-      const kid = await storage.getKidById(kidId);
-      if (!kid) {
-        return res.status(404).json({ error: "Kid not found" });
-      }
-      const saved = await storage.saveVideoPosition(videoId, kidId, position, kid.userId, duration);
-      res.json({ success: saved });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to save position" });
-    }
-  });
-
   app.post("/api/public/kid/:kidId/videos/:videoId/watched", async (req: Request, res: Response) => {
     try {
       const kidId = req.params.kidId as string;

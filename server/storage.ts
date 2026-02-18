@@ -23,7 +23,6 @@ export interface IStorage {
   updateVideo(id: string, userId: string, updates: { priority?: number; folderId?: string | null }): Promise<Video | null>;
   deleteVideo(id: string, userId: string): Promise<boolean>;
   markVideoWatched(videoId: string, kidId: string, voiceRecording: VoiceRecording, userId: string): Promise<{ video: Video | null; error?: string }>;
-  saveVideoPosition(videoId: string, kidId: string, position: number, userId: string, duration?: number): Promise<boolean>;
 
   createFeedback(feedback: InsertFeedback, userId: string): Promise<Feedback>;
 
@@ -257,31 +256,6 @@ export class DatabaseStorage implements IStorage {
 
   async markVideoWatchedPublic(videoId: string, kidId: string, voiceRecording: VoiceRecording, ownerUserId: string): Promise<{ video: Video | null; error?: string }> {
     return this.markVideoWatched(videoId, kidId, voiceRecording, ownerUserId);
-  }
-
-  async saveVideoPosition(videoId: string, kidId: string, position: number, userId: string, duration?: number): Promise<boolean> {
-    const [video] = await db.select().from(videosTable).where(
-      and(eq(videosTable.id, videoId), eq(videosTable.userId, userId))
-    );
-    if (!video) return false;
-    const progress = { ...(video.progress || {}) };
-    if (!progress[kidId]) {
-      progress[kidId] = { watched: false };
-    }
-    const prevPosition = progress[kidId].lastPosition || 0;
-    const increment = Math.max(0, position - prevPosition);
-    if (increment > 0 && increment < 30) {
-      const today = new Date().toISOString().slice(0, 10);
-      const daily = progress[kidId].dailyWatchTime || {};
-      daily[today] = (daily[today] || 0) + increment;
-      progress[kidId].dailyWatchTime = daily;
-    }
-    progress[kidId] = { ...progress[kidId], lastPosition: position };
-    if (duration && duration > 0) {
-      progress[kidId].videoDuration = duration;
-    }
-    await db.update(videosTable).set({ progress }).where(eq(videosTable.id, videoId));
-    return true;
   }
 
   async getBadgeCountForKid(kidId: string, userId: string): Promise<number> {
